@@ -1,4 +1,4 @@
-
+#version 460
 in vec3 vaPosition;
 in vec2 vaUV0;
 in vec4 vaColor;

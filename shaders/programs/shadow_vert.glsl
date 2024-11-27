@@ -1,3 +1,4 @@
+#version 460 compatibility
 
 out vec2 texCoord; 
 out vec3 foliageColor;
