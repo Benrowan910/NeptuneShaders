@@ -6,7 +6,7 @@ uniform vec3 shadowLightPosition;
 in vec2 fragUV;
 in vec2 fragPosition;
 
-layout(location = 0) out vec4 Color;
+layout(location = 0) out vec4 outColor0;
 
 uniform float frameTimeCounter;
 
@@ -23,7 +23,7 @@ void main(){
 
     vec4 rippledColor = texture(gtexture, rippledUV);
 
-    Color = mix(baseColor, rippledColor, 0.5);
+    outColor0 = mix(baseColor, rippledColor, 0.5);
 
-    Color.rgb *= shadowLightPosition;
+    outColor0.rgb *= shadowLightPosition;
 }
