@@ -1,4 +1,3 @@
-#version 460
 
 //uniform vec3 uPointLightPosition;  
 //uniform vec3 uPointLightColor;    

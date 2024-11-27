@@ -1,4 +1,3 @@
-#version 460 compatibility
 
 const int shadowMapResolution = 1024;
 
