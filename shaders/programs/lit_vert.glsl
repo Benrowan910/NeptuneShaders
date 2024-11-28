@@ -31,7 +31,7 @@ void main(){
     lightMapCoords = vaUV2 * (1.0/ 256.0) + (1.0/ 32.0);
 
     vec4 viewSpacePositionVec4 = modelViewMatrix * vec4(vaPosition+chunkOffset,1);
-    viewSpacePosition = viewSpacePositionVec4.xyz;
+    //viewSpacePosition = viewSpacePositionVec4.xyz;
 
 
     gl_Position = projectionMatrix * viewSpacePositionVec4;

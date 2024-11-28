@@ -1,2 +1,2 @@
-#version 460
-#include "/programs/basic_frag.glsl"s
+#version 460 compatibility
+#include "/programs/basic_frag.glsl"

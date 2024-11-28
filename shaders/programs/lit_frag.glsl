@@ -42,5 +42,6 @@ void main(){
     float distanceFromCamera = distance(viewSpacePosition,vec3(0));
     float blend = smoothstep (far-.5*far,far, distanceFromCamera);
     transparency = mix(0.0, transparency,pow((1-blend),.6));
-    outColor0 = vec4(pow(outputColor, vec3(1/2.2)), transparency);
+    outColor0 = vec4(pow(outputColor, vec3(1.0/2.2)), transparency);
+    //outColor0 = vec4(0.0, 0.5, 1.0 ,0.0);
 }

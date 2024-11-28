@@ -1,29 +1,21 @@
-#version 460
+#version 330 compatibility
 
+uniform sampler2D lightmap;
 uniform sampler2D gtexture;
-uniform vec3 shadowLightPosition;
 
-in vec2 fragUV;
-in vec2 fragPosition;
+uniform float alphaTestRef = 0.1;
 
-layout(location = 0) out vec4 outColor0;
+in vec2 lmcoord;
+in vec2 texcoord;
+in vec4 glcolor;
 
-uniform float frameTimeCounter;
+/* RENDERTARGETS: 0 */
+layout(location = 0) out vec4 color;
 
-void main(){
-    vec4 baseColor = texture(gtexture, fragUV);
-
-    float rippleIntensity = 0.02;
-    float rippleFreq = 8.0;
-    vec2 ripple = vec2(
-        sin(rippleFreq * fragUV.x + frameTimeCounter),
-        sin(rippleFreq * fragUV.y + frameTimeCounter)
-    );
-    vec2 rippledUV = fragUV + ripple * rippleIntensity;
-
-    vec4 rippledColor = texture(gtexture, rippledUV);
-
-    outColor0 = mix(baseColor, rippledColor, 0.5);
-
-    outColor0.rgb *= shadowLightPosition;
+void main() {
+	color = texture(gtexture, texcoord) * glcolor;
+	color *= texture(lightmap, lmcoord);
+	if (color.a < alphaTestRef) {
+		discard;
+	}
 }
