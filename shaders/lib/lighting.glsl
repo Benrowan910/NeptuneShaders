@@ -171,8 +171,9 @@ vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir
         subsurface = mat.albedo * lightColor * backLight * mat.subsurface * 0.3 * shadowFactor;
     }
     
-    // Combine with atmospheric weighting and shadows, incorporating lightmap influence
-    vec3 directLighting = (diffuse + specularColor) * lightColor * NdotL * shadowFactor * safeLightmapCoord.x;
+    // Combine with atmospheric weighting and shadows - don't multiply by lightmap here
+    // The lightmap will be handled separately in the main shader
+    vec3 directLighting = (diffuse + specularColor) * lightColor * NdotL * shadowFactor;
     
     return ambient + directLighting + subsurface + mat.albedo * mat.emission;
 }
