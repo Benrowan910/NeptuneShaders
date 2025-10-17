@@ -55,6 +55,53 @@ Material createFoliageMaterial(vec3 albedo) {
 }
 
 // ============================================================================
+// SHADOW FUNCTIONS
+// ============================================================================
+
+// Calculate simple directional shadows based on normal and light direction
+float calculateDirectionalShadow(vec3 normal, vec3 lightDir, vec2 lightmapCoord) {
+    // Use the lightmap's red channel which often contains shadow information
+    float shadowFactor = lightmapCoord.x;
+    
+    // Enhance shadow based on surface normal relative to light
+    float NdotL = dot(normal, lightDir);
+    float shadowMod = smoothstep(0.0, 0.3, NdotL);
+    
+    // Combine lightmap shadow with directional shadow
+    return mix(0.3, 1.0, shadowFactor * shadowMod);
+}
+
+// Calculate ambient occlusion from lightmap
+float calculateAmbientOcclusion(vec2 lightmapCoord) {
+    // Lightmap's second channel often contains ambient occlusion info
+    float ao = lightmapCoord.y;
+    return mix(0.2, 1.0, ao);
+}
+
+// Calculate dynamic shadow factor based on time of day and position
+float calculateDynamicShadow(vec3 worldPos, vec3 lightDir, int worldTime) {
+    // Simple height-based shadow approximation
+    float heightFactor = worldPos.y / 256.0; // Normalize world height
+    
+    // Shadows are stronger lower down
+    float shadowStrength = 1.0 - heightFactor * 0.3;
+    
+    // Time-based shadow intensity
+    float timeOfDay = float(worldTime) / 24000.0;
+    float shadowIntensity;
+    
+    if (isDay(worldTime)) {
+        // Stronger shadows during midday
+        shadowIntensity = sin(timeOfDay * PI) * 0.8 + 0.2;
+    } else {
+        // Softer shadows at night
+        shadowIntensity = 0.1;
+    }
+    
+    return shadowStrength * shadowIntensity;
+}
+
+// ============================================================================
 // LIGHTING MODELS
 // ============================================================================
 
@@ -84,10 +131,18 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
 // ADVANCED LIGHTING FUNCTIONS
 // ============================================================================
 
-// Calculate basic PBR lighting (atmospheric version)
-vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir, vec3 lightColor) {
+// Calculate basic PBR lighting with shadows (atmospheric version)
+vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir, vec3 lightColor, vec2 lightmapCoord, vec3 worldPos, int worldTime) {
     float NdotL = lambertDiffuse(normal, lightDir);
     float NdotV = max(dot(normal, viewDir), 0.0);
+    
+    // Calculate shadows
+    float directionalShadow = calculateDirectionalShadow(normal, lightDir, lightmapCoord);
+    float ambientOcclusion = calculateAmbientOcclusion(lightmapCoord);
+    float dynamicShadow = calculateDynamicShadow(worldPos, lightDir, worldTime);
+    
+    // Combine shadow factors
+    float shadowFactor = directionalShadow * dynamicShadow;
     
     // Base reflectance
     vec3 F0 = mix(vec3(mat.reflectance), mat.albedo, mat.metallic);
@@ -106,18 +161,18 @@ vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir
     float specular = blinnPhongSpecular(normal, lightDir, viewDir, shininess);
     vec3 specularColor = F * specular * 0.3; // Reduced specular intensity
     
-    // Atmospheric ambient lighting
-    vec3 ambient = mat.albedo * 0.15; // Increased ambient for atmospheric feel
+    // Enhanced ambient lighting with AO
+    vec3 ambient = mat.albedo * 0.15 * ambientOcclusion; // Apply AO to ambient
     
     // Subsurface scattering approximation (softer)
     vec3 subsurface = vec3(0.0);
     if (mat.subsurface > 0.0) {
         float backLight = max(dot(-normal, lightDir), 0.0);
-        subsurface = mat.albedo * lightColor * backLight * mat.subsurface * 0.3; // Reduced intensity
+        subsurface = mat.albedo * lightColor * backLight * mat.subsurface * 0.3 * shadowFactor;
     }
     
-    // Combine with atmospheric weighting
-    vec3 directLighting = (diffuse + specularColor) * lightColor * NdotL * 0.8; // Reduced direct lighting
+    // Combine with atmospheric weighting and shadows
+    vec3 directLighting = (diffuse + specularColor) * lightColor * NdotL * shadowFactor * 0.8;
     
     return ambient + directLighting + subsurface + mat.albedo * mat.emission;
 }
@@ -160,23 +215,6 @@ vec3 calculateAtmosphericLighting(vec3 baseColor, vec3 viewDir, vec3 lightDir, f
     
     // Distance-based atmospheric mixing
     return mix(baseColor, skyColor, atmosphereFactor);
-}
-
-// ============================================================================
-// SHADOW FUNCTIONS
-// ============================================================================
-
-// Simple shadow mapping (placeholder)
-float calculateShadow(vec3 worldPos, mat4 shadowMatrix, sampler2D shadowMap) {
-    // This would be implemented with actual shadow mapping
-    // For now, return no shadow
-    return 1.0;
-}
-
-// Soft shadow approximation
-float softShadow(vec3 worldPos, vec3 lightDir, float distance) {
-    // Simple distance-based shadow softening
-    return clamp(1.0 - distance * 0.001, 0.3, 1.0);
 }
 
 // ============================================================================

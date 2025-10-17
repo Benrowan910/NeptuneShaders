@@ -53,8 +53,8 @@ void main() {
     vec3 lightDir = getLightDirection(sunPosition, moonPosition, worldTime);
     vec3 lightColor = getLightColor(worldTime, rainStrength);
     
-    // Calculate atmospheric PBR lighting
-    vec3 finalColor = calculatePBRLighting(mat, surfaceNormal, viewDir, lightDir, lightColor);
+    // Calculate atmospheric PBR lighting with shadows
+    vec3 finalColor = calculatePBRLighting(mat, surfaceNormal, viewDir, lightDir, lightColor, lmcoord, worldPos, worldTime);
     
     // Apply lightmap (natural intensity)
     vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
