@@ -135,17 +135,11 @@ vec3 addBloom(sampler2D tex, vec2 uv) {
 }
 
 void main() {
-    // Simple pass-through with minimal processing for Iris compatibility
+    // Natural color pass-through for Iris compatibility
     vec3 baseColor = texture(colortex0, texcoord).rgb;
     
-    // Fix over-brightness by reducing exposure
-    baseColor *= 0.7;
-    
-    // Fix over-saturation
-    float luminance = dot(baseColor, vec3(0.299, 0.587, 0.114));
-    baseColor = mix(vec3(luminance), baseColor, 0.6);
-    
-    // Gentle gamma correction
+    // Minimal processing to preserve original colors
+    // Only gentle gamma correction
     baseColor = pow(baseColor, vec3(1.0 / 2.2));
     
     color = vec4(baseColor, 1.0);

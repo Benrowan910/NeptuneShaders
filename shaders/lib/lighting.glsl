@@ -84,7 +84,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
 // ADVANCED LIGHTING FUNCTIONS
 // ============================================================================
 
-// Calculate basic PBR lighting
+// Calculate basic PBR lighting (atmospheric version)
 vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir, vec3 lightColor) {
     float NdotL = lambertDiffuse(normal, lightDir);
     float NdotV = max(dot(normal, viewDir), 0.0);
@@ -92,26 +92,34 @@ vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir
     // Base reflectance
     vec3 F0 = mix(vec3(mat.reflectance), mat.albedo, mat.metallic);
     
-    // Fresnel
+    // Softer Fresnel for atmospheric feel
     vec3 F = fresnelSchlick(NdotV, F0);
+    F = mix(F0, F, 0.7); // Reduce Fresnel intensity
     
     // Diffuse (energy conservation)
     vec3 kD = (1.0 - F) * (1.0 - mat.metallic);
     vec3 diffuse = kD * mat.albedo / PI;
     
-    // Specular (simplified)
+    // Softer specular for atmospheric lighting
     float shininess = 1.0 / (mat.roughness * mat.roughness + 0.01);
+    shininess = min(shininess, 32.0); // Limit shininess for softer look
     float specular = blinnPhongSpecular(normal, lightDir, viewDir, shininess);
-    vec3 specularColor = F * specular;
+    vec3 specularColor = F * specular * 0.3; // Reduced specular intensity
     
-    // Subsurface scattering approximation
+    // Atmospheric ambient lighting
+    vec3 ambient = mat.albedo * 0.15; // Increased ambient for atmospheric feel
+    
+    // Subsurface scattering approximation (softer)
     vec3 subsurface = vec3(0.0);
     if (mat.subsurface > 0.0) {
         float backLight = max(dot(-normal, lightDir), 0.0);
-        subsurface = mat.albedo * lightColor * backLight * mat.subsurface * 0.5;
+        subsurface = mat.albedo * lightColor * backLight * mat.subsurface * 0.3; // Reduced intensity
     }
     
-    return (diffuse + specularColor) * lightColor * NdotL + subsurface + mat.albedo * mat.emission;
+    // Combine with atmospheric weighting
+    vec3 directLighting = (diffuse + specularColor) * lightColor * NdotL * 0.8; // Reduced direct lighting
+    
+    return ambient + directLighting + subsurface + mat.albedo * mat.emission;
 }
 
 // Simplified lighting for performance
@@ -127,20 +135,30 @@ vec3 calculateSimpleLighting(vec3 albedo, vec3 normal, vec3 lightDir, vec3 light
     return ambient + diffuse;
 }
 
-// Calculate atmospheric lighting
+// Calculate atmospheric lighting (enhanced spatial version)
 vec3 calculateAtmosphericLighting(vec3 baseColor, vec3 viewDir, vec3 lightDir, float distance, int worldTime) {
-    // Atmospheric perspective
-    float atmosphereFactor = 1.0 - exp(-distance * 0.0001);
-    atmosphereFactor = clamp(atmosphereFactor, 0.0, 0.3);
+    // Enhanced atmospheric perspective with spatial depth
+    float atmosphereFactor = 1.0 - exp(-distance * 0.00008); // More gradual falloff
+    atmosphereFactor = clamp(atmosphereFactor, 0.0, 0.4);
     
-    // Sky color based on time
+    // Sky color based on time with more atmospheric variation
     vec3 skyColor;
     if (isDay(worldTime)) {
-        skyColor = vec3(0.5, 0.7, 1.0);
+        if (isSunrise(worldTime) || isSunset(worldTime)) {
+            skyColor = vec3(0.8, 0.6, 0.4); // Warm atmospheric haze
+        } else {
+            skyColor = vec3(0.6, 0.75, 1.0); // Atmospheric blue
+        }
     } else {
-        skyColor = vec3(0.1, 0.15, 0.3);
+        skyColor = vec3(0.15, 0.2, 0.35); // Atmospheric night haze
     }
     
+    // Add subtle directional atmospheric scattering
+    float lightAlignment = dot(viewDir, lightDir);
+    float scattering = pow(max(lightAlignment, 0.0), 4.0) * 0.1;
+    skyColor += vec3(scattering * 0.5, scattering * 0.3, scattering * 0.1);
+    
+    // Distance-based atmospheric mixing
     return mix(baseColor, skyColor, atmosphereFactor);
 }
 

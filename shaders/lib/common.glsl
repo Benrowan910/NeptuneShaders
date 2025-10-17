@@ -83,26 +83,27 @@ vec3 getLightDirection(vec3 sunPosition, vec3 moonPosition, int worldTime) {
     return isDay(worldTime) ? normalize(sunPosition) : normalize(moonPosition);
 }
 
-// Get light color based on time of day
+// Get light color based on time of day (atmospheric version)
 vec3 getLightColor(int worldTime, float rainStrength) {
     vec3 lightColor;
     
     if (isDay(worldTime)) {
         if (isSunrise(worldTime) || isSunset(worldTime)) {
-            // Warm sunrise/sunset
-            lightColor = vec3(1.0, 0.7, 0.4);
+            // Warm atmospheric sunrise/sunset
+            lightColor = vec3(1.2, 0.8, 0.5);
         } else {
-            // Normal daylight
-            lightColor = vec3(1.0, 1.0, 0.95);
+            // Soft daylight with atmospheric blue
+            lightColor = vec3(1.0, 1.0, 1.05);
         }
     } else {
-        // Moonlight
-        lightColor = vec3(0.3, 0.35, 0.5);
+        // Cool atmospheric moonlight
+        lightColor = vec3(0.4, 0.45, 0.6);
     }
     
-    // Reduce light during rain
+    // Atmospheric rain effects
     if (isRaining(rainStrength)) {
-        lightColor *= (1.0 - rainStrength * 0.4);
+        lightColor *= (1.0 - rainStrength * 0.3);
+        lightColor = mix(lightColor, vec3(0.7, 0.8, 0.9), rainStrength * 0.3);
     }
     
     return lightColor;

@@ -1,5 +1,8 @@
 #version 330 compatibility
 
+#include "lib/common.glsl"
+#include "lib/lighting.glsl"
+
 // Uniforms
 uniform sampler2D lightmap;
 uniform sampler2D gtexture;
@@ -9,6 +12,7 @@ uniform int worldTime;
 uniform vec3 fogColor;
 uniform vec3 skyColor;
 uniform float frameTimeCounter;
+uniform float rainStrength;
 uniform float alphaTestRef = 0.1;
 
 // Inputs from vertex shader
@@ -23,6 +27,49 @@ in float blockId;
 // Outputs
 /* RENDERTARGETS: 0 */
 layout(location = 0) out vec4 color;
+
+void main() {
+    // Get base color
+    vec4 albedoColor = texture(gtexture, texcoord) * glcolor;
+    
+    // Create material based on color analysis
+    Material mat = createDefaultMaterial(albedoColor.rgb);
+    
+    // Enhanced material detection for blocks
+    if (isMetallic(albedoColor.rgb)) {
+        mat = createMetallicMaterial(albedoColor.rgb, 0.2);
+    } else if (isGold(albedoColor.rgb)) {
+        mat = createMetallicMaterial(GOLD_COLOR, 0.1);
+        mat.reflectance = 0.47;
+    }
+    
+    // Setup lighting
+    vec3 surfaceNormal = normalize(normal);
+    vec3 viewDir = normalize(-viewPos);
+    vec3 lightDir = getLightDirection(sunPosition, moonPosition, worldTime);
+    vec3 lightColor = getLightColor(worldTime, rainStrength);
+    
+    // Calculate atmospheric PBR lighting
+    vec3 finalColor = calculatePBRLighting(mat, surfaceNormal, viewDir, lightDir, lightColor);
+    
+    // Apply lightmap (natural intensity)
+    vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
+    finalColor *= lightmapColor;
+    
+    // Apply atmospheric effects
+    float distance = length(viewPos);
+    finalColor = calculateAtmosphericLighting(finalColor, viewDir, lightDir, distance, worldTime);
+    
+    // Apply weather effects
+    finalColor = applyRainDarkening(finalColor, rainStrength);
+    
+    // Output final color
+    color = vec4(finalColor, albedoColor.a);
+    
+    if (color.a < alphaTestRef) {
+        discard;
+    }
+}
 
 // Material properties structure
 struct MaterialProperties {
@@ -150,24 +197,3 @@ vec3 calculatePBRLighting(MaterialProperties mat, vec3 normal, vec3 viewDir, vec
     return result;
 }
 
-void main() {
-    // Simple block rendering for Iris compatibility
-    vec4 albedoColor = texture(gtexture, texcoord) * glcolor;
-    
-    // Basic lighting (reduced brightness)
-    vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
-    lightmapColor *= 0.8; // Reduce brightness
-    
-    // Simple final color
-    vec3 finalColor = albedoColor.rgb * lightmapColor;
-    
-    // Reduce overall brightness
-    finalColor *= 0.9;
-    
-    // Output final color
-    color = vec4(finalColor, albedoColor.a);
-    
-    if (color.a < alphaTestRef) {
-        discard;
-    }
-}
