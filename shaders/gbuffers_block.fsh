@@ -29,52 +29,44 @@ in float blockId;
 layout(location = 0) out vec4 color;
 
 void main() {
-    // Get base color
+    // Get base color - this should be preserved!
     vec4 albedoColor = texture(gtexture, texcoord) * glcolor;
     
-    // Create material based on color analysis
-    Material mat = createDefaultMaterial(albedoColor.rgb);
+    // Sample lightmap safely - vanilla Minecraft approach
+    vec3 lightmapColor = texture(lightmap, clamp(lmcoord, 0.0, 1.0)).rgb;
     
-    // Enhanced material detection for blocks
-    if (isMetallic(albedoColor.rgb)) {
-        mat = createMetallicMaterial(albedoColor.rgb, 0.2);
-    } else if (isGold(albedoColor.rgb)) {
-        mat = createMetallicMaterial(GOLD_COLOR, 0.1);
-        mat.reflectance = 0.47;
-    }
-    
-    // Setup lighting
+    // Setup basic lighting vectors
     vec3 surfaceNormal = normalize(normal);
-    vec3 viewDir = normalize(-viewPos);
     vec3 lightDir = getLightDirection(sunPosition, moonPosition, worldTime);
     vec3 lightColor = getLightColor(worldTime, rainStrength);
     
-    // Sample lightmap safely
-    vec3 lightmapColor = texture(lightmap, clamp(lmcoord, 0.0, 1.0)).rgb;
+    // Calculate simple directional lighting factor (vanilla-style)
+    float NdotL = max(dot(surfaceNormal, lightDir), 0.0);
+    float directionalFactor = mix(0.6, 1.0, NdotL); // Soft directional influence
     
-    // Calculate atmospheric PBR lighting with shadows
-    vec3 finalColor = calculatePBRLighting(mat, surfaceNormal, viewDir, lightDir, lightColor, lmcoord, worldPos, worldTime);
+    // Vanilla-style lighting: multiply base color by lighting factors
+    vec3 finalColor = albedoColor.rgb;
     
-    // Apply lightmap properly - natural light modulation
-    finalColor *= mix(0.1, 1.0, lightmapColor.x); // Sky light influence with minimum
-    finalColor *= mix(0.1, 1.0, lightmapColor.y); // Block light influence with minimum
+    // Apply lightmap (this is the core of vanilla lighting)
+    finalColor *= lightmapColor.x; // Sky light
+    finalColor *= lightmapColor.y; // Block light
     
-    // Add subtle artificial light contribution (much more conservative)
-    float artificialLightStrength = max(0.0, lightmapColor.y - 0.5); // Only strong block light
-    vec3 artificialLight = vec3(artificialLightStrength) * vec3(1.0, 0.9, 0.7) * 0.3; // Much reduced intensity
+    // Apply directional lighting
+    finalColor *= directionalFactor;
     
-    // Combine natural and artificial lighting
-    finalColor = finalColor + artificialLight;
+    // Apply time-of-day lighting color
+    finalColor *= lightColor;
     
-    // Apply atmospheric effects (much reduced to prevent color shifts)
+    // Add minimal atmospheric effects while preserving vanilla feel
     float distance = length(viewPos);
-    finalColor = mix(finalColor, calculateAtmosphericLighting(finalColor, viewDir, lightDir, distance, worldTime), 0.3);
+    if (distance > 16.0) {
+        float atmosphereFactor = min(1.0 - exp(-(distance - 16.0) * 0.0001), 0.2);
+        vec3 skyColor = isDay(worldTime) ? vec3(0.8, 0.9, 1.0) : vec3(0.2, 0.25, 0.4);
+        finalColor = mix(finalColor, skyColor * 0.5, atmosphereFactor);
+    }
     
     // Apply weather effects
     finalColor = applyRainDarkening(finalColor, rainStrength);
-    
-    // Clamp final color to prevent oversaturation
-    finalColor = clamp(finalColor, vec3(0.0), vec3(1.0));
     
     // Output final color
     color = vec4(finalColor, albedoColor.a);
