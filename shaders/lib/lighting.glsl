@@ -61,10 +61,10 @@ Material createFoliageMaterial(vec3 albedo) {
 // Calculate simple directional shadows based on normal and light direction
 float calculateDirectionalShadow(vec3 normal, vec3 lightDir, vec2 lightmapCoord) {
     // Use the lightmap's red channel which often contains shadow information
-    float shadowFactor = lightmapCoord.x;
+    float shadowFactor = clamp(lightmapCoord.x, 0.0, 1.0); // Clamp to prevent artifacts
     
     // Enhance shadow based on surface normal relative to light
-    float NdotL = dot(normal, lightDir);
+    float NdotL = max(dot(normal, lightDir), 0.0); // Ensure positive values
     float shadowMod = smoothstep(0.0, 0.5, NdotL);
     
     // Stronger shadow contrast - don't multiply, use minimum
@@ -75,7 +75,8 @@ float calculateDirectionalShadow(vec3 normal, vec3 lightDir, vec2 lightmapCoord)
 float calculateAmbientOcclusion(vec2 lightmapCoord) {
     // Lightmap's second channel often contains ambient occlusion info
     float ao = lightmapCoord.y;
-    return mix(0.2, 1.0, ao);
+    // Reduce corner darkness by making AO less aggressive
+    return mix(0.4, 1.0, ao); // Changed from 0.2 to 0.4 for less dark corners
 }
 
 // Calculate dynamic shadow factor based on time of day and position
@@ -131,13 +132,16 @@ vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir
     float NdotL = lambertDiffuse(normal, lightDir);
     float NdotV = max(dot(normal, viewDir), 0.0);
     
-    // Calculate shadows
-    float directionalShadow = calculateDirectionalShadow(normal, lightDir, lightmapCoord);
-    float ambientOcclusion = calculateAmbientOcclusion(lightmapCoord);
+    // Clamp lightmap coordinates to prevent artifacts
+    vec2 safeLightmapCoord = clamp(lightmapCoord, 0.0, 1.0);
+    
+    // Calculate shadows using clamped lightmap values
+    float directionalShadow = calculateDirectionalShadow(normal, lightDir, safeLightmapCoord);
+    float ambientOcclusion = calculateAmbientOcclusion(safeLightmapCoord);
     float dynamicShadow = calculateDynamicShadow(worldPos, lightDir, worldTime);
     
     // Fix shadow combination - use additive instead of multiplicative
-    float shadowFactor = min(directionalShadow + dynamicShadow * 0.5, 1.0);
+    float shadowFactor = clamp(min(directionalShadow + dynamicShadow * 0.5, 1.0), 0.0, 1.0);
     
     // Base reflectance
     vec3 F0 = mix(vec3(mat.reflectance), mat.albedo, mat.metallic);
@@ -156,8 +160,9 @@ vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir
     float specular = blinnPhongSpecular(normal, lightDir, viewDir, shininess);
     vec3 specularColor = F * specular * 0.3; // Reduced specular intensity
     
-    // Reduced ambient lighting to allow shadows to show
-    vec3 ambient = mat.albedo * 0.05 * ambientOcclusion; // Reduced from 0.15 to 0.05
+    // Apply lightmap-based ambient with AO but ensure minimum lighting
+    float lightmapInfluence = max(safeLightmapCoord.y, 0.2); // Minimum ambient to prevent total darkness
+    vec3 ambient = mat.albedo * 0.08 * ambientOcclusion * lightmapInfluence;
     
     // Subsurface scattering approximation (softer)
     vec3 subsurface = vec3(0.0);
@@ -166,8 +171,8 @@ vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir
         subsurface = mat.albedo * lightColor * backLight * mat.subsurface * 0.3 * shadowFactor;
     }
     
-    // Combine with atmospheric weighting and shadows
-    vec3 directLighting = (diffuse + specularColor) * lightColor * NdotL * shadowFactor * 0.8;
+    // Combine with atmospheric weighting and shadows, incorporating lightmap influence
+    vec3 directLighting = (diffuse + specularColor) * lightColor * NdotL * shadowFactor * safeLightmapCoord.x;
     
     return ambient + directLighting + subsurface + mat.albedo * mat.emission;
 }

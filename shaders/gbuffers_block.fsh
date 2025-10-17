@@ -49,12 +49,19 @@ void main() {
     vec3 lightDir = getLightDirection(sunPosition, moonPosition, worldTime);
     vec3 lightColor = getLightColor(worldTime, rainStrength);
     
+    // Sample lightmap safely
+    vec3 lightmapColor = texture(lightmap, clamp(lmcoord, 0.0, 1.0)).rgb;
+    
     // Calculate atmospheric PBR lighting with shadows
     vec3 finalColor = calculatePBRLighting(mat, surfaceNormal, viewDir, lightDir, lightColor, lmcoord, worldPos, worldTime);
     
-    // Apply lightmap (natural intensity)
-    vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
-    finalColor *= lightmapColor;
+    // Handle artificial lighting (torches, glowstone, etc.) separately
+    // High lightmap values indicate artificial light sources
+    float artificialLightStrength = max(0.0, (lightmapColor.r + lightmapColor.g) * 0.5 - 0.1);
+    vec3 artificialLight = vec3(artificialLightStrength) * vec3(1.0, 0.8, 0.6) * 1.5; // Warm artificial light
+    
+    // Combine natural and artificial lighting
+    finalColor = finalColor + artificialLight;
     
     // Apply atmospheric effects
     float distance = length(viewPos);
