@@ -66,11 +66,11 @@ void main() {
     // Simple deferred pass for Iris compatibility
     vec4 originalColor = texture(colortex0, texcoord);
     
-    // Simple pass-through with slight brightness reduction
-    vec3 finalColor = originalColor.rgb * 0.95;
+    // Pass-through with minimal processing to preserve original lighting
+    vec3 finalColor = originalColor.rgb;
     
-    // Gentle gamma correction
-    finalColor = pow(finalColor, vec3(1.0 / 2.2));
+    // Only apply gentle gamma correction to prevent dark area artifacts
+    finalColor = pow(max(finalColor, vec3(0.0)), vec3(1.0 / 2.0)); // Reduced gamma
     
     color = vec4(finalColor, originalColor.a);
 }

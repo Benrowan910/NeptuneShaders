@@ -138,9 +138,10 @@ void main() {
     // Natural color pass-through for Iris compatibility
     vec3 baseColor = texture(colortex0, texcoord).rgb;
     
-    // Minimal processing to preserve original colors
-    // Only gentle gamma correction
-    baseColor = pow(baseColor, vec3(1.0 / 2.2));
+    // Preserve natural colors in dark areas by avoiding excessive gamma correction
+    // Only apply minimal gamma adjustment and clamp to prevent artifacts
+    baseColor = clamp(baseColor, vec3(0.0), vec3(1.0));
+    baseColor = pow(baseColor, vec3(1.0 / 1.8)); // Reduced gamma to prevent dark area color shifts
     
     color = vec4(baseColor, 1.0);
 }

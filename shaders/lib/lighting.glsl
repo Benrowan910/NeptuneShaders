@@ -65,10 +65,10 @@ float calculateDirectionalShadow(vec3 normal, vec3 lightDir, vec2 lightmapCoord)
     
     // Enhance shadow based on surface normal relative to light
     float NdotL = dot(normal, lightDir);
-    float shadowMod = smoothstep(0.0, 0.3, NdotL);
+    float shadowMod = smoothstep(0.0, 0.5, NdotL);
     
-    // Combine lightmap shadow with directional shadow
-    return mix(0.3, 1.0, shadowFactor * shadowMod);
+    // Stronger shadow contrast - don't multiply, use minimum
+    return mix(0.1, 1.0, min(shadowFactor, shadowMod));
 }
 
 // Calculate ambient occlusion from lightmap
@@ -80,25 +80,20 @@ float calculateAmbientOcclusion(vec2 lightmapCoord) {
 
 // Calculate dynamic shadow factor based on time of day and position
 float calculateDynamicShadow(vec3 worldPos, vec3 lightDir, int worldTime) {
-    // Simple height-based shadow approximation
-    float heightFactor = worldPos.y / 256.0; // Normalize world height
-    
-    // Shadows are stronger lower down
-    float shadowStrength = 1.0 - heightFactor * 0.3;
-    
-    // Time-based shadow intensity
+    // Remove height-based shadow reduction that was washing out above-ground shadows
+    // Simple time-based shadow intensity only
     float timeOfDay = float(worldTime) / 24000.0;
     float shadowIntensity;
     
     if (isDay(worldTime)) {
-        // Stronger shadows during midday
-        shadowIntensity = sin(timeOfDay * PI) * 0.8 + 0.2;
+        // Much stronger shadows during day
+        shadowIntensity = sin(timeOfDay * PI) * 0.6 + 0.4; // 0.4 to 1.0 range
     } else {
-        // Softer shadows at night
-        shadowIntensity = 0.1;
+        // Still visible shadows at night
+        shadowIntensity = 0.3;
     }
     
-    return shadowStrength * shadowIntensity;
+    return shadowIntensity;
 }
 
 // ============================================================================
@@ -141,8 +136,8 @@ vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir
     float ambientOcclusion = calculateAmbientOcclusion(lightmapCoord);
     float dynamicShadow = calculateDynamicShadow(worldPos, lightDir, worldTime);
     
-    // Combine shadow factors
-    float shadowFactor = directionalShadow * dynamicShadow;
+    // Fix shadow combination - use additive instead of multiplicative
+    float shadowFactor = min(directionalShadow + dynamicShadow * 0.5, 1.0);
     
     // Base reflectance
     vec3 F0 = mix(vec3(mat.reflectance), mat.albedo, mat.metallic);
@@ -161,8 +156,8 @@ vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir
     float specular = blinnPhongSpecular(normal, lightDir, viewDir, shininess);
     vec3 specularColor = F * specular * 0.3; // Reduced specular intensity
     
-    // Enhanced ambient lighting with AO
-    vec3 ambient = mat.albedo * 0.15 * ambientOcclusion; // Apply AO to ambient
+    // Reduced ambient lighting to allow shadows to show
+    vec3 ambient = mat.albedo * 0.05 * ambientOcclusion; // Reduced from 0.15 to 0.05
     
     // Subsurface scattering approximation (softer)
     vec3 subsurface = vec3(0.0);

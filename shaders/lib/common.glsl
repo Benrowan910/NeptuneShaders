@@ -96,8 +96,8 @@ vec3 getLightColor(int worldTime, float rainStrength) {
             lightColor = vec3(1.0, 1.0, 1.05);
         }
     } else {
-        // Cool atmospheric moonlight
-        lightColor = vec3(0.4, 0.45, 0.6);
+        // Increased moonlight brightness to prevent overly dark areas
+        lightColor = vec3(0.6, 0.65, 0.8); // Brighter moonlight
     }
     
     // Atmospheric rain effects
