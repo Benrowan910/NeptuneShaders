@@ -18,7 +18,7 @@ out vec4 glcolor;
 out vec3 worldPos;
 out vec3 viewPos;
 out vec3 normal;
-out float entityId;
+flat out int entityId;
 
 void main() {
     // Calculate world position
@@ -42,5 +42,5 @@ void main() {
     glcolor = gl_Color;
     
     // Entity ID for material classification
-    entityId = mc_Entity.x;
+    entityId = int(mc_Entity.x);
 }

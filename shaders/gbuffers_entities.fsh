@@ -19,7 +19,7 @@ in vec4 glcolor;
 in vec3 worldPos;
 in vec3 viewPos;
 in vec3 normal;
-in float entityId;
+flat in int entityId;
 
 // Outputs
 /* RENDERTARGETS: 0 */
@@ -36,7 +36,7 @@ struct EntityMaterial {
 };
 
 // Entity material classification
-EntityMaterial getEntityMaterial(vec4 albedoColor, float entityId) {
+EntityMaterial getEntityMaterial(vec4 albedoColor, int entityId) {
     EntityMaterial mat;
     
     // Default organic material (skin, fur, etc.)
@@ -134,7 +134,7 @@ vec3 getEntityReflection(vec3 normal, vec3 viewDir, float roughness) {
     vec3 envColor = mix(fogColor, skyColor, skyFactor);
     
     // Entities move, so add some dynamic variation
-    float dynamicFactor = sin(frameTimeCounter * 2.0 + entityId) * 0.1 + 0.9;
+    float dynamicFactor = sin(frameTimeCounter * 2.0 + float(entityId)) * 0.1 + 0.9;
     
     return envColor * dynamicFactor * (1.0 - roughness * 0.7);
 }
@@ -221,7 +221,7 @@ void main() {
     
     // Add subtle animation effects for living entities
     if (mat.subsurface > 0.1) {
-        float pulse = sin(frameTimeCounter * 4.0 + entityId * 10.0) * 0.02 + 1.0;
+        float pulse = sin(frameTimeCounter * 4.0 + float(entityId) * 10.0) * 0.02 + 1.0;
         finalColor *= pulse;
     }
     
