@@ -137,47 +137,27 @@ vec3 addBloom(sampler2D tex, vec2 uv) {
 void main() {
     vec2 uv = texcoord;
     
-    // Sample base color with subtle chromatic aberration
-    vec3 baseColor = chromaticAberration(colortex0, uv, 0.001).rgb;
+    // Sample base color (simplified for Iris)
+    vec3 baseColor = texture(colortex0, uv).rgb;
     
-    // Add bloom
-    vec3 bloom = addBloom(colortex0, uv);
-    baseColor += bloom;
-    
-    // Color grading based on time and weather
-    baseColor = colorGrade(baseColor, frameTimeCounter);
-    
-    // Dynamic exposure based on time of day (reduced values)
-    float exposure = 0.8;
+    // Reduced color grading for Iris compatibility
     if (worldTime > 1000 && worldTime < 13000) {
-        // Day exposure
-        exposure = 0.9;
+        // Day - neutral
+        baseColor *= vec3(1.0, 1.0, 1.0);
     } else {
-        // Night exposure
-        exposure = 1.1;
+        // Night - slightly blue
+        baseColor *= vec3(0.9, 0.9, 1.1);
     }
     
-    // Rain affects exposure
-    exposure *= (1.0 + rainStrength * 0.1);
+    // Simple exposure
+    float exposure = 1.0;
+    baseColor *= exposure;
     
-    // Tone mapping
-    baseColor = toneMapping(baseColor, exposure);
-    
-    // Apply vignette
-    baseColor = applyVignette(baseColor, uv);
-    
-    // Add subtle film grain
-    baseColor = addFilmGrain(baseColor, uv, frameTimeCounter);
-    
-    // Final contrast and saturation adjustments
-    float contrast = 1.05 + rainStrength * 0.1;
-    float saturation = 1.02 - rainStrength * 0.1;
-    
-    baseColor = (baseColor - 0.5) * contrast + 0.5;
+    // Reduce saturation to fix over-saturation
     float luminance = dot(baseColor, vec3(0.299, 0.587, 0.114));
-    baseColor = mix(vec3(luminance), baseColor, saturation);
+    baseColor = mix(vec3(luminance), baseColor, 0.8); // Reduced saturation
     
-    // Gamma correction
+    // Simple gamma correction
     baseColor = pow(baseColor, vec3(1.0 / 2.2));
     
     color = vec4(baseColor, 1.0);

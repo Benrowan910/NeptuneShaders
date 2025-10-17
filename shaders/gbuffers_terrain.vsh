@@ -86,42 +86,31 @@ vec3 applyWindAnimation(vec3 position, float time, float foliageType, float stre
 }
 
 void main() {
-    // Calculate world position for wind effects
-    vec4 modelViewPos = gl_ModelViewMatrix * gl_Vertex;
-    vec4 worldPosition = gbufferModelViewInverse * modelViewPos;
-    worldPos = worldPosition.xyz + cameraPosition;
+    // Use standard transformation for Iris compatibility
+    gl_Position = ftransform();
     
-    // Extract block ID and detect foliage
-    blockId = mc_Entity.x;
-    foliageType = detectFoliageType(blockId, gl_Color.rgb, worldPos);
+    // Basic world position for wind effects
+    worldPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
+    viewPos = worldPos;
     
-    // Create a copy of the vertex for wind animation
-    vec4 animatedVertex = gl_Vertex;
+    // Extract block ID and detect foliage (simplified)
+    blockId = 0.0; // Simplified for Iris
+    vec3 color = gl_Color.rgb;
+    bool isGreenish = (color.g > color.r && color.g > color.b && color.g > 0.3);
+    foliageType = isGreenish ? 1.0 : 0.0;
     
-    // Apply wind animation to foliage
-    if (foliageType > 0.1) {
-        float windStrength = 0.015 + rainStrength * 0.025;
+    // Basic wind animation for foliage (simplified)
+    if (foliageType > 0.5) {
+        vec3 windOffset = vec3(0.0);
+        windOffset.x = sin(frameTimeCounter * 2.0 + worldPos.x * 0.1) * 0.01;
+        windOffset.z = cos(frameTimeCounter * 1.8 + worldPos.z * 0.1) * 0.01;
         
-        // Different wind strength for different foliage types
-        if (foliageType > 0.8) {
-            windStrength *= 1.5; // Stronger for tree leaves
-        } else {
-            windStrength *= 0.7; // Gentler for grass
-        }
-        
-        vec3 windOffset = applyWindAnimation(worldPos, frameTimeCounter, foliageType, windStrength);
-        animatedVertex.xyz += windOffset;
+        // Apply wind by modifying the position slightly
+        gl_Position.xy += windOffset.xz * gl_Position.w;
     }
     
-    // Use standard transformation with animated vertex
-    gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * animatedVertex;
-    
-    // View position
-    viewPos = (gl_ModelViewMatrix * animatedVertex).xyz;
-    
-    // Calculate normal in world space
-    vec3 worldNormal = normalize(gl_NormalMatrix * gl_Normal);
-    normal = worldNormal;
+    // Calculate normal
+    normal = normalize(gl_NormalMatrix * gl_Normal);
     
     // Pass through texture coordinates and lighting
     texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;

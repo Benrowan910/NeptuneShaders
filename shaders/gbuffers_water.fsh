@@ -101,54 +101,17 @@ void main() {
     // Get base water color
     vec4 baseColor = texture(gtexture, texcoord) * glcolor;
     
-    // Calculate detailed surface normal
-    vec3 detailNormal = getWaveNormal(worldPos.xz, frameTimeCounter, waveIntensity * 0.5);
-    vec3 surfaceNormal = normalize(normal + detailNormal * 0.3);
+    // Simple water color mixing
+    vec3 waterColor = mix(WATER_COLOR_SHALLOW, WATER_COLOR_DEEP, 0.5);
     
-    // View direction
-    vec3 viewDir = normalize(viewPos);
-    
-    // Light direction (sun during day, moon during night)
-    bool isDay = worldTime > 1000 && worldTime < 13000;
-    vec3 lightPos = isDay ? sunPosition : moonPosition;
-    vec3 lightDir = normalize(lightPos);
-    
-    // Water depth approximation
-    float depth = length(viewPos) * 0.01;
-    depth = clamp(depth, 0.0, 1.0);
-    
-    // Water color mixing based on depth and body size
-    vec3 waterColor = mix(WATER_COLOR_SHALLOW, WATER_COLOR_DEEP, depth * waterBodySize);
-    
-    // Fresnel effect
-    float fresnelFactor = fresnel(viewDir, surfaceNormal, 1.33); // Water IOR ≈ 1.33
-    
-    // Reflection
-    vec3 reflectionColor = getReflectionColor(surfaceNormal, viewDir);
-    
-    // Specular highlights (Blinn-Phong)
-    float shininess = 128.0 * (1.0 + waveIntensity);
-    float specular = blinnPhong(lightDir, viewDir, surfaceNormal, shininess);
-    
-    // Weather effects
-    float stormDarkening = 1.0 - rainStrength * 0.3;
-    waterColor *= stormDarkening;
-    
-    // Combine colors
-    vec3 finalColor = mix(waterColor, reflectionColor, fresnelFactor * 0.8);
-    finalColor += specular * vec3(1.0, 1.0, 0.9) * (isDay ? 1.0 : 0.3);
-    
-    // Apply lighting
+    // Basic lighting from lightmap
     vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
-    finalColor *= lightmapColor;
     
-    // Calculate final alpha
-    float alpha = WATER_TRANSPARENCY + fresnelFactor * 0.2;
-    alpha = clamp(alpha, 0.3, 0.95);
+    // Simple final color calculation
+    vec3 finalColor = waterColor * lightmapColor;
+    
+    // Make sure water is visible with proper alpha
+    float alpha = 0.7; // Semi-transparent but visible
     
     color = vec4(finalColor, alpha);
-    
-    if (color.a < alphaTestRef) {
-        discard;
-    }
 }

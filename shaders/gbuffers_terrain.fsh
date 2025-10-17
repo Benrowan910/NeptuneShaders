@@ -205,30 +205,27 @@ void main() {
     // Get base color
     vec4 albedoColor = texture(gtexture, texcoord) * glcolor;
     
-    // Get material properties
-    MaterialProperties mat = getMaterialProperties(albedoColor, blockId, foliageType);
+    // Simple material properties for Iris compatibility
+    vec3 baseColor = albedoColor.rgb;
     
-    // Normalize normal and calculate view direction
-    vec3 surfaceNormal = normalize(normal);
-    vec3 viewDir = normalize(viewPos);
-    
-    // Light direction (sun during day, moon during night)
-    bool isDay = worldTime > 1000 && worldTime < 13000;
-    vec3 lightPos = isDay ? sunPosition : moonPosition;
-    vec3 lightDir = normalize(lightPos);
-    vec3 lightColor = isDay ? vec3(1.0, 1.0, 0.9) : vec3(0.3, 0.3, 0.5);
-    
-    // Calculate PBR lighting
-    vec3 finalColor = calculatePBRLighting(mat, surfaceNormal, viewDir, lightDir, lightColor, foliageType);
-    
-    // Apply lightmap
+    // Basic lighting
     vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
-    finalColor *= lightmapColor;
     
-    // Output final color
+    // Simple final color calculation
+    vec3 finalColor = baseColor * lightmapColor;
+    
+    // Add slight green enhancement for foliage
+    if (foliageType > 0.5) {
+        finalColor *= vec3(0.95, 1.05, 0.95);
+        
+        // Add subtle wind flicker
+        float flicker = sin(frameTimeCounter * 6.0 + worldPos.x + worldPos.z) * 0.02 + 1.0;
+        finalColor *= flicker;
+    }
+    
     color = vec4(finalColor, albedoColor.a);
     
-    if (color.a < alphaTestRef) {
+    if (albedoColor.a < alphaTestRef) {
         discard;
     }
 }

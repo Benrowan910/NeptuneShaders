@@ -68,42 +68,20 @@ float estimateWaterBodySize(vec3 pos) {
 }
 
 void main() {
-    // Transform to world space
-    vec4 worldPosition = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
-    worldPos = worldPosition.xyz + cameraPosition;
+    // Use standard transformation
+    gl_Position = ftransform();
     
-    // Calculate water body size
-    waterBodySize = estimateWaterBodySize(worldPos);
-    
-    // Weather-based wave intensity
-    float stormFactor = rainStrength * 2.0 + 0.5; // 0.5 to 2.5 range
-    float timeFactor = (sin(worldTime * 0.001) + 1.0) * 0.5; // Day/night variation
-    waveIntensity = stormFactor * waterBodySize * (0.5 + timeFactor * 0.5);
-    
-    // Generate waves
-    float time = frameTimeCounter;
-    float waveHeight = waves(worldPos.xz, time, waveIntensity * 0.2);
-    
-    // Apply wave displacement
-    vec4 displacedPosition = worldPosition;
-    displacedPosition.y += waveHeight;
-    
-    // Transform back to clip space
-    vec4 viewPosition = gbufferModelView * (displacedPosition - vec4(cameraPosition, 0.0));
-    viewPos = viewPosition.xyz;
-    gl_Position = gbufferProjection * viewPosition;
-    
-    // Calculate normal for waves (will be refined in fragment shader)
-    float epsilon = 0.1;
-    float heightX = waves(worldPos.xz + vec2(epsilon, 0.0), time, waveIntensity * 0.2);
-    float heightZ = waves(worldPos.xz + vec2(0.0, epsilon), time, waveIntensity * 0.2);
-    
-    vec3 tangentX = normalize(vec3(epsilon, heightX - waveHeight, 0.0));
-    vec3 tangentZ = normalize(vec3(0.0, heightZ - waveHeight, epsilon));
-    normal = normalize(cross(tangentX, tangentZ));
-    
-    // Pass through texture coordinates and lighting
+    // Basic outputs for water
     texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
     lmcoord = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
     glcolor = gl_Color;
+    
+    // Simple world position calculation
+    worldPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
+    viewPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
+    normal = normalize(gl_NormalMatrix * gl_Normal);
+    
+    // Simple wave parameters
+    waveIntensity = 0.5;
+    waterBodySize = 1.0;
 }
