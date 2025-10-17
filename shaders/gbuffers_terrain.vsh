@@ -89,25 +89,17 @@ void main() {
     // Use standard transformation for Iris compatibility
     gl_Position = ftransform();
     
-    // Basic world position for wind effects
+    // Basic world position calculation
     worldPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
     viewPos = worldPos;
     
-    // Extract block ID and detect foliage (simplified)
-    blockId = 0.0; // Simplified for Iris
+    // Simplified foliage detection (no animation)
+    blockId = 0.0;
     vec3 color = gl_Color.rgb;
     bool isGreenish = (color.g > color.r && color.g > color.b && color.g > 0.3);
     foliageType = isGreenish ? 1.0 : 0.0;
     
-    // Basic wind animation for foliage (simplified)
-    if (foliageType > 0.5) {
-        vec3 windOffset = vec3(0.0);
-        windOffset.x = sin(frameTimeCounter * 2.0 + worldPos.x * 0.1) * 0.01;
-        windOffset.z = cos(frameTimeCounter * 1.8 + worldPos.z * 0.1) * 0.01;
-        
-        // Apply wind by modifying the position slightly
-        gl_Position.xy += windOffset.xz * gl_Position.w;
-    }
+    // NO WIND ANIMATION - static foliage
     
     // Calculate normal
     normal = normalize(gl_NormalMatrix * gl_Normal);

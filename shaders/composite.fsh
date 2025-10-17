@@ -135,29 +135,17 @@ vec3 addBloom(sampler2D tex, vec2 uv) {
 }
 
 void main() {
-    vec2 uv = texcoord;
+    // Simple pass-through with minimal processing for Iris compatibility
+    vec3 baseColor = texture(colortex0, texcoord).rgb;
     
-    // Sample base color (simplified for Iris)
-    vec3 baseColor = texture(colortex0, uv).rgb;
+    // Fix over-brightness by reducing exposure
+    baseColor *= 0.7;
     
-    // Reduced color grading for Iris compatibility
-    if (worldTime > 1000 && worldTime < 13000) {
-        // Day - neutral
-        baseColor *= vec3(1.0, 1.0, 1.0);
-    } else {
-        // Night - slightly blue
-        baseColor *= vec3(0.9, 0.9, 1.1);
-    }
-    
-    // Simple exposure
-    float exposure = 1.0;
-    baseColor *= exposure;
-    
-    // Reduce saturation to fix over-saturation
+    // Fix over-saturation
     float luminance = dot(baseColor, vec3(0.299, 0.587, 0.114));
-    baseColor = mix(vec3(luminance), baseColor, 0.8); // Reduced saturation
+    baseColor = mix(vec3(luminance), baseColor, 0.6);
     
-    // Simple gamma correction
+    // Gentle gamma correction
     baseColor = pow(baseColor, vec3(1.0 / 2.2));
     
     color = vec4(baseColor, 1.0);

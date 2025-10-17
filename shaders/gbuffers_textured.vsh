@@ -52,37 +52,19 @@ vec3 applyWindAnimation(vec3 position, float time, float strength) {
 }
 
 void main() {
-    // Calculate world position for wind effects
-    vec4 modelViewPos = gl_ModelViewMatrix * gl_Vertex;
-    vec4 worldPosition = gbufferModelViewInverse * modelViewPos;
-    worldPos = worldPosition.xyz + cameraPosition;
+    // Simple transform for Iris compatibility
+    gl_Position = ftransform();
     
-    // Extract block ID and check for foliage
-    blockId = mc_Entity.x;
-    bool isLeaf = isFoliage(blockId, gl_Color.rgb);
+    // Basic world position
+    worldPos = (gl_ModelViewMatrix * gl_Vertex).xyz;
+    viewPos = worldPos;
     
-    // Create a copy of the vertex for wind animation
-    vec4 animatedVertex = gl_Vertex;
+    // Simplified block detection
+    blockId = 0.0;
+    windEffect = 0.0; // No wind animation
     
-    // Apply wind animation to foliage
-    if (isLeaf) {
-        float windStrength = 0.02 + rainStrength * 0.03;
-        vec3 windOffset = applyWindAnimation(worldPos, frameTimeCounter, windStrength);
-        animatedVertex.xyz += windOffset;
-        windEffect = 1.0;
-    } else {
-        windEffect = 0.0;
-    }
-    
-    // Use standard transformation with animated vertex
-    gl_Position = gl_ProjectionMatrix * gl_ModelViewMatrix * animatedVertex;
-    
-    // View position
-    viewPos = (gl_ModelViewMatrix * animatedVertex).xyz;
-    
-    // Calculate normal in world space
-    vec3 worldNormal = normalize(gl_NormalMatrix * gl_Normal);
-    normal = worldNormal;
+    // Calculate normal
+    normal = normalize(gl_NormalMatrix * gl_Normal);
     
     // Pass through texture coordinates and lighting
     texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;

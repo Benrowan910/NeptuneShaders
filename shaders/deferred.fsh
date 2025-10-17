@@ -63,63 +63,13 @@ vec3 enhanceColors(vec3 color, float contrast, float saturation) {
 }
 
 void main() {
-    // Sample the original color
+    // Simple deferred pass for Iris compatibility
     vec4 originalColor = texture(colortex0, texcoord);
     
-    // Sample depth
-    float depth = texture(depthtex0, texcoord).r;
+    // Simple pass-through with slight brightness reduction
+    vec3 finalColor = originalColor.rgb * 0.95;
     
-    // Calculate view space position
-    vec4 clipPos = vec4(texcoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-    vec4 viewPos = gbufferProjectionInverse * clipPos;
-    viewPos /= viewPos.w;
-    
-    // Calculate world space position
-    vec4 worldPos = gbufferModelViewInverse * viewPos;
-    
-    // View direction
-    vec3 viewDir = normalize(viewPos.xyz);
-    
-    // Start with original color
-    vec3 finalColor = originalColor.rgb;
-    
-    // Add atmospheric effects for distant objects
-    if (depth > 0.99) {
-        // Sky rendering
-        vec3 atmosphere = calculateAtmosphere(viewDir, lightDir, 1000.0);
-        finalColor = mix(finalColor, atmosphere, 0.5);
-    } else {
-        // Add subtle atmospheric perspective
-        float distance = length(viewPos.xyz);
-        vec3 atmosphere = calculateAtmosphere(viewDir, lightDir, distance);
-        float atmosphereFactor = clamp(distance * 0.0001, 0.0, 0.3);
-        finalColor = mix(finalColor, atmosphere, atmosphereFactor);
-    }
-    
-    // Weather effects
-    if (rainStrength > 0.1) {
-        // Darker, more saturated colors during rain
-        finalColor *= (1.0 - rainStrength * 0.3);
-        finalColor = enhanceColors(finalColor, 1.2, 1.3);
-    }
-    
-    // Time of day color grading
-    if (timeOfDay > 0.2 && timeOfDay < 0.3) {
-        // Sunrise - warm orange tint
-        finalColor *= vec3(1.2, 1.0, 0.8);
-    } else if (timeOfDay > 0.7 && timeOfDay < 0.8) {
-        // Sunset - warm red tint
-        finalColor *= vec3(1.3, 0.9, 0.7);
-    } else if (timeOfDay > 0.9 || timeOfDay < 0.1) {
-        // Night - cool blue tint
-        finalColor *= vec3(0.7, 0.8, 1.2);
-    }
-    
-    // Apply tone mapping and color enhancement
-    finalColor = toneMapping(finalColor);
-    finalColor = enhanceColors(finalColor, 1.1, 1.05);
-    
-    // Gamma correction
+    // Gentle gamma correction
     finalColor = pow(finalColor, vec3(1.0 / 2.2));
     
     color = vec4(finalColor, originalColor.a);

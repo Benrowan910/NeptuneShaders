@@ -208,20 +208,20 @@ void main() {
     // Simple material properties for Iris compatibility
     vec3 baseColor = albedoColor.rgb;
     
-    // Basic lighting
+    // Basic lighting (reduced brightness)
     vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
+    lightmapColor *= 0.8; // Reduce brightness
     
     // Simple final color calculation
     vec3 finalColor = baseColor * lightmapColor;
     
-    // Add slight green enhancement for foliage
+    // Add slight green enhancement for foliage (no animation)
     if (foliageType > 0.5) {
         finalColor *= vec3(0.95, 1.05, 0.95);
-        
-        // Add subtle wind flicker
-        float flicker = sin(frameTimeCounter * 6.0 + worldPos.x + worldPos.z) * 0.02 + 1.0;
-        finalColor *= flicker;
     }
+    
+    // Reduce overall brightness to fix "super bright" issue
+    finalColor *= 0.9;
     
     color = vec4(finalColor, albedoColor.a);
     

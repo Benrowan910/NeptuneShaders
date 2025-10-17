@@ -206,47 +206,18 @@ vec3 calculatePBRLighting(MaterialProperties mat, vec3 normal, vec3 viewDir, vec
 }
 
 void main() {
-    // Get base color
+    // Simple textured rendering for Iris compatibility
     vec4 albedoColor = texture(gtexture, texcoord) * glcolor;
     
-    // Get enhanced material properties
-    MaterialProperties mat = getMaterialProperties(albedoColor, blockId, windEffect);
-    
-    // Normalize normal and calculate view direction
-    vec3 surfaceNormal = normalize(normal);
-    vec3 viewDir = normalize(viewPos);
-    
-    // Light setup
-    bool isDay = worldTime > 1000 && worldTime < 13000;
-    vec3 lightPos = isDay ? sunPosition : moonPosition;
-    vec3 lightDir = normalize(lightPos);
-    
-    // Enhanced light color with atmospheric effects
-    vec3 lightColor;
-    if (isDay) {
-        float dayProgress = (float(worldTime) - 1000.0) / 12000.0;
-        float sunHeight = sin(dayProgress * 3.14159);
-        lightColor = mix(vec3(1.0, 0.6, 0.3), vec3(1.0, 1.0, 0.95), sunHeight);
-    } else {
-        lightColor = vec3(0.2, 0.25, 0.4); // Cool moonlight
-    }
-    
-    // Weather effects on lighting
-    lightColor *= (1.0 - rainStrength * 0.4);
-    
-    // Calculate enhanced PBR lighting
-    vec3 finalColor = calculatePBRLighting(mat, surfaceNormal, viewDir, lightDir, lightColor);
-    
-    // Apply lightmap with enhanced contrast
+    // Basic lighting (reduced brightness)
     vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
-    lightmapColor = pow(lightmapColor, vec3(0.8)); // Increase contrast
-    finalColor *= lightmapColor;
+    lightmapColor *= 0.8; // Reduce brightness
     
-    // Wind animation affects lighting slightly (leaves flicker)
-    if (windEffect > 0.5) {
-        float flicker = sin(frameTimeCounter * 8.0 + worldPos.x + worldPos.z) * 0.05 + 1.0;
-        finalColor *= flicker;
-    }
+    // Simple final color
+    vec3 finalColor = albedoColor.rgb * lightmapColor;
+    
+    // Reduce overall brightness
+    finalColor *= 0.9;
     
     color = vec4(finalColor, albedoColor.a);
     
