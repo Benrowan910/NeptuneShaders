@@ -30,35 +30,46 @@ in float windEffect;
 layout(location = 0) out vec4 color;
 
 void main() {
-    // Get base color
+    // Get base color - this should be preserved!
     vec4 albedoColor = texture(gtexture, texcoord) * glcolor;
     
-    // Create material based on properties
-    Material mat = createDefaultMaterial(albedoColor.rgb);
+    // Sample lightmap safely - vanilla Minecraft approach
+    vec3 lightmapColor = texture(lightmap, clamp(lmcoord, 0.0, 1.0)).rgb;
     
-    // Material detection for textured objects
-    if (isFoliage(albedoColor.rgb)) {
-        mat = createFoliageMaterial(albedoColor.rgb);
-    } else if (isMetallic(albedoColor.rgb)) {
-        mat = createMetallicMaterial(albedoColor.rgb, 0.4);
-    }
-    
-    // Setup lighting
+    // Setup basic lighting vectors
     vec3 surfaceNormal = normalize(normal);
-    vec3 viewDir = normalize(-viewPos);
     vec3 lightDir = getLightDirection(sunPosition, moonPosition, worldTime);
     vec3 lightColor = getLightColor(worldTime, rainStrength);
     
-    // Calculate atmospheric PBR lighting with shadows
-    vec3 finalColor = calculatePBRLighting(mat, surfaceNormal, viewDir, lightDir, lightColor, lmcoord, worldPos, worldTime);
+    // Calculate simple directional lighting factor (vanilla-style)
+    float NdotL = max(dot(surfaceNormal, lightDir), 0.0);
+    float directionalFactor = mix(0.6, 1.0, NdotL); // Soft directional influence
     
-    // Apply lightmap (natural intensity)
-    vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
-    finalColor *= lightmapColor;
+    // Vanilla-style lighting: multiply base color by lighting factors
+    vec3 finalColor = albedoColor.rgb;
     
-    // Apply atmospheric effects
+    // Special handling for foliage to maintain color
+    if (isFoliage(albedoColor.rgb)) {
+        finalColor *= GRASS_COLOR_ENHANCE; // Subtle grass enhancement
+    }
+    
+    // Apply lightmap (this is the core of vanilla lighting)
+    finalColor *= lightmapColor.x; // Sky light
+    finalColor *= lightmapColor.y; // Block light
+    
+    // Apply directional lighting
+    finalColor *= directionalFactor;
+    
+    // Apply time-of-day lighting color
+    finalColor *= lightColor;
+    
+    // Add minimal atmospheric effects while preserving vanilla feel
     float distance = length(viewPos);
-    finalColor = calculateAtmosphericLighting(finalColor, viewDir, lightDir, distance, worldTime);
+    if (distance > 16.0) {
+        float atmosphereFactor = min(1.0 - exp(-(distance - 16.0) * 0.0001), 0.2);
+        vec3 skyColor = isDay(worldTime) ? vec3(0.8, 0.9, 1.0) : vec3(0.2, 0.25, 0.4);
+        finalColor = mix(finalColor, skyColor * 0.5, atmosphereFactor);
+    }
     
     // Apply weather effects
     finalColor = applyRainDarkening(finalColor, rainStrength);
