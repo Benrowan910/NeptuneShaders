@@ -124,14 +124,14 @@ vec3 addBloom(sampler2D tex, vec2 uv) {
         vec2 offset = vec2(float(i) * texelSize.x, 0.0);
         vec3 sample = texture(tex, uv + offset).rgb;
         
-        // Only bloom bright areas
+        // Only bloom bright areas (increased threshold)
         float brightness = dot(sample, vec3(0.299, 0.587, 0.114));
-        if (brightness > 0.8) {
+        if (brightness > 1.2) {
             bloom += sample * weights[abs(i)];
         }
     }
     
-    return bloom * 0.3;
+    return bloom * 0.1; // Reduced bloom intensity
 }
 
 void main() {
@@ -147,18 +147,18 @@ void main() {
     // Color grading based on time and weather
     baseColor = colorGrade(baseColor, frameTimeCounter);
     
-    // Dynamic exposure based on time of day
-    float exposure = 1.0;
+    // Dynamic exposure based on time of day (reduced values)
+    float exposure = 0.8;
     if (worldTime > 1000 && worldTime < 13000) {
         // Day exposure
-        exposure = 1.1;
+        exposure = 0.9;
     } else {
         // Night exposure
-        exposure = 1.4;
+        exposure = 1.1;
     }
     
     // Rain affects exposure
-    exposure *= (1.0 + rainStrength * 0.2);
+    exposure *= (1.0 + rainStrength * 0.1);
     
     // Tone mapping
     baseColor = toneMapping(baseColor, exposure);

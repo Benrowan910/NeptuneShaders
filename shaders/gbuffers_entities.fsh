@@ -199,24 +199,24 @@ void main() {
     vec3 lightPos = isDay ? sunPosition : moonPosition;
     vec3 lightDir = normalize(lightPos);
     
-    // Light color with time variation
+    // Light color with time variation (reduced intensity)
     vec3 lightColor;
     if (isDay) {
         float dayProgress = (float(worldTime) - 1000.0) / 12000.0;
         float sunHeight = sin(dayProgress * 3.14159);
-        lightColor = mix(vec3(1.0, 0.7, 0.4), vec3(1.0, 1.0, 0.98), sunHeight);
+        lightColor = mix(vec3(0.8, 0.6, 0.3), vec3(0.85, 0.85, 0.8), sunHeight);
     } else {
-        lightColor = vec3(0.25, 0.3, 0.45);
+        lightColor = vec3(0.2, 0.25, 0.35);
     }
     
     // Calculate entity lighting
     vec3 finalColor = calculateEntityLighting(mat, surfaceNormal, viewDir, lightDir, lightColor);
     
-    // Apply lightmap with entity-specific adjustments
+    // Apply lightmap with entity-specific adjustments (reduced enhancement)
     vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
     
-    // Entities often need more contrast in lighting
-    lightmapColor = pow(lightmapColor, vec3(0.75));
+    // Entities often need more contrast in lighting (reduced)
+    lightmapColor = pow(lightmapColor, vec3(0.9));
     finalColor *= lightmapColor;
     
     // Add subtle animation effects for living entities

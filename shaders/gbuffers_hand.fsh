@@ -178,14 +178,14 @@ vec3 calculateItemLighting(ItemMaterial mat, vec3 normal, vec3 viewDir, vec3 lig
     // Emission for glowing items
     vec3 emission = mat.albedo * mat.emission;
     
-    // Combine lighting
+    // Combine lighting (reduced intensity)
     vec3 result = diffuse * (1.0 - mat.metallic) * lightColor;
-    result += specular * f0 * lightColor * NdotL * 1.5; // Enhanced specular for items
+    result += specular * f0 * lightColor * NdotL * 1.2; // Reduced specular enhancement
     result += envReflection;
     result += emission;
     
-    // Enhanced ambient for hand items (they should be clearly visible)
-    result += mat.albedo * 0.08 * (1.0 - mat.metallic);
+    // Enhanced ambient for hand items (reduced)
+    result += mat.albedo * 0.05 * (1.0 - mat.metallic);
     
     return result;
 }
@@ -206,26 +206,26 @@ void main() {
     vec3 lightPos = isDay ? sunPosition : moonPosition;
     vec3 lightDir = normalize(lightPos);
     
-    // Enhanced light color for items
+    // Enhanced light color for items (reduced)
     vec3 lightColor;
     if (isDay) {
         float dayProgress = (float(worldTime) - 1000.0) / 12000.0;
         float sunHeight = sin(dayProgress * 3.14159);
-        lightColor = mix(vec3(1.0, 0.8, 0.5), vec3(1.0, 1.0, 0.98), sunHeight);
-        lightColor *= 1.1; // Boost for hand items
+        lightColor = mix(vec3(0.8, 0.65, 0.4), vec3(0.85, 0.85, 0.8), sunHeight);
+        lightColor *= 0.9; // Reduced boost for hand items
     } else {
-        lightColor = vec3(0.3, 0.35, 0.5);
+        lightColor = vec3(0.25, 0.3, 0.4);
     }
     
     // Calculate item lighting
     vec3 finalColor = calculateItemLighting(mat, surfaceNormal, viewDir, lightDir, lightColor);
     
-    // Apply lightmap with hand-specific adjustments
+    // Apply lightmap with hand-specific adjustments (reduced)
     vec3 lightmapColor = texture(lightmap, lmcoord).rgb;
     
-    // Hand items should have more contrast and brightness
-    lightmapColor = pow(lightmapColor, vec3(0.7));
-    lightmapColor *= 1.2; // Brightness boost
+    // Hand items should have more contrast and brightness (reduced)
+    lightmapColor = pow(lightmapColor, vec3(0.85));
+    lightmapColor *= 1.05; // Reduced brightness boost
     finalColor *= lightmapColor;
     
     // Subtle animation for enchanted items

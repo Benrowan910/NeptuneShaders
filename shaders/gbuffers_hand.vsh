@@ -21,16 +21,16 @@ out vec3 normal;
 out float itemId;
 
 void main() {
-    // Calculate world position
-    vec4 worldPosition = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
+    // Use standard transformation for position
+    gl_Position = ftransform();
+    
+    // Calculate world position for effects
+    vec4 modelViewPos = gl_ModelViewMatrix * gl_Vertex;
+    vec4 worldPosition = gbufferModelViewInverse * modelViewPos;
     worldPos = worldPosition.xyz + cameraPosition;
     
     // View position (closer to camera for hand items)
-    vec4 viewPosition = gbufferModelView * (worldPosition - vec4(cameraPosition, 0.0));
-    viewPos = viewPosition.xyz;
-    
-    // Transform to clip space
-    gl_Position = gbufferProjection * viewPosition;
+    viewPos = modelViewPos.xyz;
     
     // Calculate normal in world space
     vec3 worldNormal = normalize(gl_NormalMatrix * gl_Normal);

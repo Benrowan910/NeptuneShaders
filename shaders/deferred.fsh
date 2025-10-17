@@ -34,13 +34,13 @@ vec3 calculateAtmosphere(vec3 viewDir, vec3 lightDir, float depth) {
     // Mie scattering (sun glow)
     float mie = 1.0 / pow(1.0 + 1.0 - cosTheta, 1.5);
     
-    // Combine scattering
-    vec3 scattering = vec3(0.3, 0.6, 1.0) * rayleigh + vec3(1.0, 0.9, 0.7) * mie * 0.1;
+    // Combine scattering (reduced intensity)
+    vec3 scattering = vec3(0.15, 0.3, 0.5) * rayleigh + vec3(0.5, 0.45, 0.35) * mie * 0.05;
     
     // Apply depth-based fog
     float fogFactor = 1.0 - exp(-depth * 0.00001);
     
-    return scattering * fogFactor;
+    return scattering * fogFactor * 0.5; // Further reduced
 }
 
 // Enhanced tone mapping
