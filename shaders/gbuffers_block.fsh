@@ -66,12 +66,15 @@ void main() {
     // Combine natural and artificial lighting
     finalColor = finalColor + artificialLight;
     
-    // Apply atmospheric effects
+    // Apply atmospheric effects (much reduced to prevent color shifts)
     float distance = length(viewPos);
-    finalColor = calculateAtmosphericLighting(finalColor, viewDir, lightDir, distance, worldTime);
+    finalColor = mix(finalColor, calculateAtmosphericLighting(finalColor, viewDir, lightDir, distance, worldTime), 0.3);
     
     // Apply weather effects
     finalColor = applyRainDarkening(finalColor, rainStrength);
+    
+    // Clamp final color to prevent oversaturation
+    finalColor = clamp(finalColor, vec3(0.0), vec3(1.0));
     
     // Output final color
     color = vec4(finalColor, albedoColor.a);

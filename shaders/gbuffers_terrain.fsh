@@ -58,20 +58,26 @@ void main() {
     // Calculate atmospheric PBR lighting with shadows
     vec3 finalColor = calculatePBRLighting(mat, surfaceNormal, viewDir, lightDir, lightColor, lmcoord, worldPos, worldTime);
     
-    // Handle artificial lighting (torches, glowstone, etc.) separately
-    // High lightmap values indicate artificial light sources
-    float artificialLightStrength = max(0.0, (lightmapColor.r + lightmapColor.g) * 0.5 - 0.1);
-    vec3 artificialLight = vec3(artificialLightStrength) * vec3(1.0, 0.8, 0.6) * 1.5; // Warm artificial light
+    // Apply lightmap properly - natural light modulation
+    finalColor *= mix(0.1, 1.0, lightmapColor.x); // Sky light influence with minimum
+    finalColor *= mix(0.1, 1.0, lightmapColor.y); // Block light influence with minimum
+    
+    // Add subtle artificial light contribution (much more conservative)
+    float artificialLightStrength = max(0.0, lightmapColor.y - 0.5); // Only strong block light
+    vec3 artificialLight = vec3(artificialLightStrength) * vec3(1.0, 0.9, 0.7) * 0.3; // Much reduced intensity
     
     // Combine natural and artificial lighting
     finalColor = finalColor + artificialLight;
     
-    // Apply atmospheric effects based on distance
+    // Apply atmospheric effects based on distance (much reduced to prevent color shifts)
     float distance = length(viewPos);
-    finalColor = calculateAtmosphericLighting(finalColor, viewDir, lightDir, distance, worldTime);
+    finalColor = mix(finalColor, calculateAtmosphericLighting(finalColor, viewDir, lightDir, distance, worldTime), 0.3);
     
     // Apply weather effects
     finalColor = applyRainDarkening(finalColor, rainStrength);
+    
+    // Clamp final color to prevent oversaturation
+    finalColor = clamp(finalColor, vec3(0.0), vec3(1.0));
     
     color = vec4(finalColor, albedoColor.a);
     

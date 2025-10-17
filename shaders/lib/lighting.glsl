@@ -140,8 +140,8 @@ vec3 calculatePBRLighting(Material mat, vec3 normal, vec3 viewDir, vec3 lightDir
     float ambientOcclusion = calculateAmbientOcclusion(safeLightmapCoord);
     float dynamicShadow = calculateDynamicShadow(worldPos, lightDir, worldTime);
     
-    // Fix shadow combination - use additive instead of multiplicative
-    float shadowFactor = clamp(min(directionalShadow + dynamicShadow * 0.5, 1.0), 0.0, 1.0);
+    // Fix shadow combination - use additive instead of multiplicative with proper clamping
+    float shadowFactor = clamp(min(directionalShadow + dynamicShadow * 0.5, 1.0), 0.1, 1.0); // Prevent going below 0.1
     
     // Base reflectance
     vec3 F0 = mix(vec3(mat.reflectance), mat.albedo, mat.metallic);
